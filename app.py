@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
+from sklearn.model_selection import train_test_split
 
 st.set_page_config(
     page_title="Sleep Debt AI Dashboard",
@@ -191,3 +192,51 @@ with tab3:
         st.plotly_chart(fig_corr, use_container_width=True)
     else:
         st.warning("Belum cukup variabel numerik untuk membuat heatmap")
+
+# menentukan fitur dan target
+st.markdown("---")
+st.subheader("3. Persiapan Machine Learning")
+
+feature_cols = [
+    col for col in df.columns
+    if col not in EXCLUDED_FEATURES
+]
+
+if len(feature_cols) == 0:
+    st.error("Tidak ada fitur prediktor yang dapat digunakan")
+    st.stop()
+
+X = df[feature_cols].copy()
+y = df[TARGET].copy()
+
+# hapus fitur yang seluruh nilainya kosong
+X = X.dropna(axis=1, how="all")
+feature_cols = X.columns.tolist()
+
+st.write("**Variabel prediktor yang digunakan:**")
+st.write(feature_cols)
+st.write("**Variabel target:**", TARGET)
+
+# menentukan kolom numerik dan kategorikal secara otomatis
+numeric_features = X.select_dtypes(include=np.number).columns.tolist()
+categorical_features = X.select_dtypes(exclude=np.number).columns.tolist()
+
+# memastikan kelas target cukup untuk stratified split
+class_counts = y.value_counts()
+if class_counts.min() < 2:
+    st.error(
+        "Setidaknya satu kategori target hanya memiliki satu data. "
+        "Stratified train-test split tidak dapat dilakukan."
+    )
+    st.stop()
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=test_size / 100,
+    random_state=int(random_state),
+    stratify=y
+)
+
+st.write(f"Jumlah data training: **{len(X_train):,}**")
+st.write(f"Jumlah data testing: **{len(X_test):,}**")
