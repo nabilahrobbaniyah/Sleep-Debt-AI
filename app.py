@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 
 st.set_page_config(
     page_title="Sleep Debt AI Dashboard",
@@ -70,3 +71,49 @@ tree_min_samples = st.sidebar.slider(
     max_value=20,
     value=5
 )
+
+# validasi dataset
+st.subheader("1. Dataset Overview")
+
+if TARGET not in df.columns:
+    st.error(
+        f"Kolom target '{TARGET}' tidak ditemukan. "
+        "Periksa kembali nama kolom pada file CSV."
+    )
+    st.write("Kolom yang tersedia:", df.columns.tolist())
+    st.stop()
+
+df = df.dropna(subset=[TARGET]).copy()
+df[TARGET] = df[TARGET].astype(str).str.strip()
+
+# ringkasan metrik
+c1, c2, c3, c4 = st.columns(4)
+c1.metric("Jumlah responden", f"{len(df):,}")
+c2.metric("Jumlah kolom", len(df.columns))
+c3.metric("Missing values", f"{int(df.isna().sum().sum()):,}")
+c4.metric("Jumlah kategori target", df[TARGET].nunique())
+
+with st.expander("Lihat data mentah"):
+    st.dataframe(df.head(20), use_container_width=True)
+
+with st.expander("Lihat informasi tipe data dan missing values"):
+    info_df = pd.DataFrame({
+        "Tipe Data": df.dtypes.astype(str),
+        "Missing Values": df.isna().sum(),
+        "Missing (%)": (df.isna().mean() * 100).round(2)
+    })
+    st.dataframe(info_df, use_container_width=True)
+
+# grafik distribusi kategori target
+target_counts = df[TARGET].value_counts().reset_index()
+target_counts.columns = ["Kategori Sleep Debt", "Jumlah"]
+
+fig_target = px.bar(
+    target_counts,
+    x="Kategori Sleep Debt",
+    y="Jumlah",
+    color="Kategori Sleep Debt",
+    title="Distribusi Kategori Sleep Debt",
+    text="Jumlah"
+)
+st.plotly_chart(fig_target, use_container_width=True)
