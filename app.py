@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import plotly.express as px
 
 st.set_page_config(
@@ -117,3 +118,76 @@ fig_target = px.bar(
     text="Jumlah"
 )
 st.plotly_chart(fig_target, use_container_width=True)
+
+# EDA
+st.markdown("---")
+st.subheader("2. Exploratory Data Analysis")
+
+tab1, tab2, tab3 = st.tabs([
+    "Penggunaan Smartphone",
+    "Durasi Tidur",
+    "Korelasi Variabel"
+])
+
+with tab1:
+    if "bedtime_phone_minutes" in df.columns:
+        fig_phone = px.histogram(
+            df,
+            x="bedtime_phone_minutes",
+            nbins=30,
+            title="Distribusi Durasi Penggunaan Smartphone Sebelum Tidur",
+            labels={"bedtime_phone_minutes": "Durasi (menit)"}
+        )
+        st.plotly_chart(fig_phone, use_container_width=True)
+
+    if {"bedtime_phone_minutes", TARGET}.issubset(df.columns):
+        fig_box = px.box(
+            df,
+            x=TARGET,
+            y="bedtime_phone_minutes",
+            color=TARGET,
+            title="Durasi Penggunaan Smartphone Berdasarkan Kategori Sleep Debt"
+        )
+        st.plotly_chart(fig_box, use_container_width=True)
+
+with tab2:
+    if "total_sleep_hours" in df.columns:
+        fig_sleep = px.histogram(
+            df,
+            x="total_sleep_hours",
+            nbins=30,
+            title="Distribusi Total Durasi Tidur",
+            labels={"total_sleep_hours": "Durasi tidur (jam)"}
+        )
+        st.plotly_chart(fig_sleep, use_container_width=True)
+
+    if {"bedtime_phone_minutes", "total_sleep_hours"}.issubset(df.columns):
+        fig_scatter = px.scatter(
+            df,
+            x="bedtime_phone_minutes",
+            y="total_sleep_hours",
+            color=TARGET,
+            opacity=0.6,
+            title="Penggunaan Smartphone dan Durasi Tidur",
+            labels={
+                "bedtime_phone_minutes": "Penggunaan smartphone (menit)",
+                "total_sleep_hours": "Durasi tidur (jam)"
+            }
+        )
+        st.plotly_chart(fig_scatter, use_container_width=True)
+
+with tab3:
+    numeric_df = df.select_dtypes(include=np.number)
+
+    if numeric_df.shape[1] >= 2:
+        corr = numeric_df.corr()
+        fig_corr = px.imshow(
+            corr,
+            text_auto=".2f",
+            aspect="auto",
+            color_continuous_scale="RdBu_r",
+            title="Correlation Heatmap"
+        )
+        st.plotly_chart(fig_corr, use_container_width=True)
+    else:
+        st.warning("Belum cukup variabel numerik untuk membuat heatmap")
