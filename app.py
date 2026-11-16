@@ -3,6 +3,10 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 from sklearn.model_selection import train_test_split
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.impute import SimpleImputer
 
 st.set_page_config(
     page_title="Sleep Debt AI Dashboard",
@@ -240,3 +244,28 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 st.write(f"Jumlah data training: **{len(X_train):,}**")
 st.write(f"Jumlah data testing: **{len(X_test):,}**")
+
+# preprocessing dan pipeline model
+numeric_preprocess_lr = Pipeline(steps=[
+    ("imputer", SimpleImputer(strategy="median")),
+    ("scaler", StandardScaler())
+])
+
+numeric_preprocess_tree = Pipeline(steps=[
+    ("imputer", SimpleImputer(strategy="median"))
+])
+
+categorical_preprocess = Pipeline(steps=[
+    ("imputer", SimpleImputer(strategy="most_frequent")),
+    ("onehot", OneHotEncoder(handle_unknown="ignore"))
+])
+
+preprocessor_lr = ColumnTransformer(transformers=[
+    ("num", numeric_preprocess_lr, numeric_features),
+    ("cat", categorical_preprocess, categorical_features)
+])
+
+preprocessor_tree = ColumnTransformer(transformers=[
+    ("num", numeric_preprocess_tree, numeric_features),
+    ("cat", categorical_preprocess, categorical_features)
+])
