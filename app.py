@@ -7,6 +7,8 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
 
 st.set_page_config(
     page_title="Sleep Debt AI Dashboard",
@@ -269,3 +271,33 @@ preprocessor_tree = ColumnTransformer(transformers=[
     ("num", numeric_preprocess_tree, numeric_features),
     ("cat", categorical_preprocess, categorical_features)
 ])
+# buat 2 model klasifikasi
+logistic_model = Pipeline(steps=[
+    ("preprocessor", preprocessor_lr),
+    ("classifier", LogisticRegression(
+        max_iter=2000,
+        class_weight="balanced"
+    ))
+])
+
+decision_tree_model = Pipeline(steps=[
+    ("preprocessor", preprocessor_tree),
+    ("classifier", DecisionTreeClassifier(
+        max_depth=tree_depth,
+        min_samples_leaf=tree_min_samples,
+        random_state=int(random_state),
+        class_weight="balanced"
+    ))
+])
+
+# training dan evaluasi model
+
+# menampilkan perbandingan model
+
+# confusion matrix
+
+# explainable ai sederhana
+
+# simulator prediksi
+
+# catatan dan batasan
