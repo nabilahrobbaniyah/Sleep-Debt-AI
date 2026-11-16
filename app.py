@@ -292,8 +292,98 @@ decision_tree_model = Pipeline(steps=[
 
 # training dan evaluasi model
 
-# menampilkan perbandingan model
+# Tombol digunakan agar proses training dijalankan saat diminta.
+if st.button("Jalankan Training dan Evaluasi Model", type="primary"):
 
+    with st.spinner("Melatih Logistic Regression dan Decision Tree..."):
+
+        # Melatih kedua model dengan data training yang sama.
+        logistic_model.fit(X_train, y_train)
+        decision_tree_model.fit(X_train, y_train)
+
+        # Prediksi terhadap data testing yang belum dilihat model.
+        pred_lr = logistic_model.predict(X_test)
+        pred_dt = decision_tree_model.predict(X_test)
+
+        # Menghitung metrik evaluasi.
+        def evaluate_model(name, y_true, y_pred):
+            return {
+                "Model": name,
+                "Accuracy": accuracy_score(y_true, y_pred),
+                "Precision (Macro)": precision_score(
+                    y_true, y_pred, average="macro", zero_division=0
+                ),
+                "Recall (Macro)": recall_score(
+                    y_true, y_pred, average="macro", zero_division=0
+                ),
+                "F1-Score (Macro)": f1_score(
+                    y_true, y_pred, average="macro", zero_division=0
+                )
+            }
+
+        results = pd.DataFrame([
+            evaluate_model("Logistic Regression", y_test, pred_lr),
+            evaluate_model("Decision Tree", y_test, pred_dt)
+        ])
+
+        st.session_state["results"] = results
+        st.session_state["pred_lr"] = pred_lr
+        st.session_state["pred_dt"] = pred_dt
+        st.session_state["y_test"] = y_test
+        st.session_state["logistic_model"] = logistic_model
+        st.session_state["decision_tree_model"] = decision_tree_model
+        st.session_state["X_test"] = X_test
+        st.session_state["feature_cols"] = feature_cols
+
+    st.success("Training dan evaluasi kedua model selesai.")
+    
+# menampilkan perbandingan model
+if "results" in st.session_state:
+
+    st.markdown("---")
+    st.subheader("4. Model Performance Comparison")
+
+    results = st.session_state["results"]
+
+    st.dataframe(
+        results.style.format({
+            "Accuracy": "{:.3f}",
+            "Precision (Macro)": "{:.3f}",
+            "Recall (Macro)": "{:.3f}",
+            "F1-Score (Macro)": "{:.3f}"
+        }),
+        use_container_width=True
+    )
+
+    # Grafik perbandingan performa.
+    results_long = results.melt(
+        id_vars="Model",
+        var_name="Metrik",
+        value_name="Skor"
+    )
+
+    fig_metrics = px.bar(
+        results_long,
+        x="Metrik",
+        y="Skor",
+        color="Model",
+        barmode="group",
+        text_auto=".3f",
+        title="Perbandingan Performa Logistic Regression dan Decision Tree"
+    )
+    fig_metrics.update_yaxes(range=[0, 1])
+    st.plotly_chart(fig_metrics, use_container_width=True)
+
+    # Model dengan macro F1-score tertinggi.
+    best_model = results.loc[
+        results["F1-Score (Macro)"].idxmax(), "Model"
+    ]
+    st.info(
+        f"Model dengan Macro F1-Score tertinggi pada pengujian ini: "
+        f"*{best_model}*. Hasil ini berlaku untuk pembagian data dan "
+        "pengaturan eksperimen yang digunakan."
+    )
+    
 # confusion matrix
 
 # explainable ai sederhana
