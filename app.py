@@ -385,8 +385,103 @@ if "results" in st.session_state:
     )
     
 # confusion matrix
+st.subheader("5. Confusion Matrix")
+
+    labels = sorted(y.unique().tolist())
+
+    col_a, col_b = st.columns(2)
+
+    for col, model_name, prediction in [
+        (col_a, "Logistic Regression", st.session_state["pred_lr"]),
+        (col_b, "Decision Tree", st.session_state["pred_dt"])
+    ]:
+        cm = confusion_matrix(
+            st.session_state["y_test"],
+            prediction,
+            labels=labels
+        )
+
+        fig_cm = px.imshow(
+            cm,
+            x=labels,
+            y=labels,
+            text_auto=True,
+            color_continuous_scale="Blues",
+            labels={
+                "x": "Prediksi Model",
+                "y": "Kategori Aktual",
+                "color": "Jumlah"
+            },
+            title=f"Confusion Matrix - {model_name}"
+        )
+        col.plotly_chart(fig_cm, use_container_width=True)
 
 # explainable ai sederhana
+st.markdown("---")
+    st.subheader("6. Explainable AI")
+
+    st.write(
+        "Bagian ini menunjukkan fitur yang paling banyak digunakan "
+        "oleh model dalam membuat prediksi. Feature importance bukan "
+        "bukti hubungan sebab-akibat."
+    )
+
+    trained_tree = st.session_state["decision_tree_model"]
+    trained_classifier = trained_tree.named_steps["classifier"]
+    trained_preprocessor = trained_tree.named_steps["preprocessor"]
+
+    # Mengambil nama fitur setelah proses One-Hot Encoding.
+    try:
+        transformed_names = trained_preprocessor.get_feature_names_out()
+        importances = trained_classifier.feature_importances_
+
+        importance_df = pd.DataFrame({
+            "Fitur": transformed_names,
+            "Importance": importances
+        }).sort_values("Importance", ascending=False).head(15)
+
+        fig_importance = px.bar(
+            importance_df.sort_values("Importance"),
+            x="Importance",
+            y="Fitur",
+            orientation="h",
+            title="15 Fitur Terpenting - Decision Tree"
+        )
+        st.plotly_chart(fig_importance, use_container_width=True)
+    except Exception as error:
+        st.warning(f"Feature importance belum dapat ditampilkan: {error}")
+
+    # Menampilkan koefisien Logistic Regression.
+    st.markdown("*Koefisien Logistic Regression*")
+    trained_lr = st.session_state["logistic_model"]
+    lr_classifier = trained_lr.named_steps["classifier"]
+    lr_preprocessor = trained_lr.named_steps["preprocessor"]
+
+    try:
+        lr_names = lr_preprocessor.get_feature_names_out()
+        coefficients = lr_classifier.coef_
+
+        # Untuk multiclass, hitung rata-rata nilai absolut koefisien
+        # antar kelas sebagai ringkasan besarnya koefisien.
+        mean_abs_coef = np.abs(coefficients).mean(axis=0)
+
+        coef_df = pd.DataFrame({
+            "Fitur": lr_names,
+            "Rata-rata |Koefisien|": mean_abs_coef
+        }).sort_values(
+            "Rata-rata |Koefisien|", ascending=False
+        ).head(15)
+
+        fig_coef = px.bar(
+            coef_df.sort_values("Rata-rata |Koefisien|"),
+            x="Rata-rata |Koefisien|",
+            y="Fitur",
+            orientation="h",
+            title="15 Fitur dengan Koefisien Absolut Terbesar"
+        )
+        st.plotly_chart(fig_coef, use_container_width=True)
+    except Exception as error:
+        st.warning(f"Koefisien belum dapat ditampilkan: {error}")
 
 # simulator prediksi
 
