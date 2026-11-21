@@ -484,5 +484,85 @@ st.markdown("---")
         st.warning(f"Koefisien belum dapat ditampilkan: {error}")
 
 # simulator prediksi
+st.markdown("---")
+    st.subheader("7. Prediction Simulator")
+
+    st.write(
+        "Masukkan karakteristik individu untuk mencoba prediksi "
+        "kategori sleep debt. Nilai yang dimasukkan harus mengikuti "
+        "rentang dan kategori yang ada pada dataset."
+    )
+
+    input_values = {}
+
+    with st.form("prediction_form"):
+
+        input_columns = st.columns(2)
+
+        for index, feature in enumerate(feature_cols):
+            col = input_columns[index % 2]
+
+            if feature in numeric_features:
+                # Nilai awal menggunakan median data training.
+                default_value = float(
+                    pd.to_numeric(X_train[feature], errors="coerce").median()
+                )
+                input_values[feature] = col.number_input(
+                    feature,
+                    value=default_value
+                )
+            else:
+                # Pilihan kategori diambil dari data yang tersedia.
+                options = sorted(
+                    X_train[feature].dropna().astype(str).unique().tolist()
+                )
+                input_values[feature] = col.selectbox(
+                    feature,
+                    options=options
+                )
+
+        selected_model = st.selectbox(
+            "Pilih model prediksi",
+            ["Logistic Regression", "Decision Tree"]
+        )
+
+        submitted = st.form_submit_button("Prediksi Kategori Sleep Debt")
+
+    if submitted:
+        # Mengubah input pengguna menjadi DataFrame dengan urutan kolom tepat.
+        input_df = pd.DataFrame([input_values], columns=feature_cols)
+
+        if selected_model == "Logistic Regression":
+            selected_pipeline = st.session_state["logistic_model"]
+        else:
+            selected_pipeline = st.session_state["decision_tree_model"]
+
+        # Melakukan prediksi kategori dan probabilitas kelas.
+        predicted_class = selected_pipeline.predict(input_df)[0]
+        probabilities = selected_pipeline.predict_proba(input_df)[0]
+        class_names = selected_pipeline.named_steps["classifier"].classes_
+
+        st.success(f"Prediksi kategori: *{predicted_class}*")
+
+        probability_df = pd.DataFrame({
+            "Kategori": class_names,
+            "Probabilitas": probabilities
+        })
+
+        fig_prob = px.bar(
+            probability_df,
+            x="Kategori",
+            y="Probabilitas",
+            color="Kategori",
+            title="Probabilitas Prediksi Setiap Kategori"
+        )
+        fig_prob.update_yaxes(tickformat=".0%", range=[0, 1])
+        st.plotly_chart(fig_prob, use_container_width=True)
 
 # catatan dan batasan
+st.markdown("---")
+st.caption(
+    "Catatan: Dashboard ini merupakan alat pembelajaran dan eksplorasi "
+    "Machine Learning, bukan alat diagnosis medis. Hasil prediksi menunjukkan "
+    "pola dalam dataset dan tidak membuktikan hubungan sebab-akibat."
+)
